@@ -217,7 +217,7 @@ uint8_t uart_read_byte() {
 
 // read from computer to kernel
 void uart_rx_interrupt_handler() {
-	//若buffer滿了，即暫停interrupt handler，就不能收資料。
+  // 若buffer滿了，即暫停interrupt handler，就不能收資料。
   if ((rx_bf_w_idx + 1) % MAX_BUF_SIZE == rx_bf_r_idx) {
     disable_uart_rx_interrupt();
     return;
@@ -247,10 +247,12 @@ void uart_tx_interrupt_handler() {
 // read from read buffer
 char uart_get_c_async() {
   enable_uart_rx_interrupt();
-  
-  //開啟後，即把interrupt handler打開，handler會開始探訪，這邊意思是我們還沒有值進來
-  while (rx_bf_r_idx == rx_bf_w_idx) {
+
+  // 開啟後，即把interrupt
+  // handler打開，handler會開始探訪，這邊意思是我們還沒有值進來
+  if (rx_bf_r_idx == rx_bf_w_idx) {
     asm volatile("nop");
+    return 0;
   }
 
   char c = rx_buffer[rx_bf_r_idx];

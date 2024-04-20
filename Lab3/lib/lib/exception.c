@@ -1,12 +1,12 @@
 
 #include "../include/exeception.h"
 #include "../include/global.h"
+#include "../include/interrupt.h"
 
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
 void disable_interrupt() { asm volatile("msr DAIFSet, 0xf"); }
 
-void default_handler()
-{
+void default_handler() {
   disable_interrupt();
   unsigned long spsr = read_sysreg(spsr_el1);
   unsigned long elr = read_sysreg(elr_el1);
@@ -18,8 +18,8 @@ void default_handler()
   enable_interrupt();
 }
 
-void lower_sync_handler(uint64_t spsr_el1, uint64_t elr_el1, uint64_t esr_el1, uint64_t cause)
-{
+void lower_sync_handler(uint64_t spsr_el1, uint64_t elr_el1, uint64_t esr_el1,
+                        uint64_t cause) {
   uart_puts("-----lower_sync_handler-----\n");
 
   uart_puts("spsr el1 :");
@@ -36,48 +36,43 @@ void lower_sync_handler(uint64_t spsr_el1, uint64_t elr_el1, uint64_t esr_el1, u
   // uart_printf("esr_el1: %x\n\n", esr_el1);
 }
 
-void uart_print()
-{
+void uart_print() {
   disable_interrupt();
   uart_puts("hello");
   enable_interrupt();
 }
 
-void irq_uart_handler()
-{
+void irq_uart_handler() {
 
   //;
   disable_interrupt();
   // uart_puts("irq\n");
-  if (*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT)
-  {	
+  if (*IRQ_PENDING_1 & IRQ_PENDING_1_AUX_INT) {
 
     // uart_puts("in while");
-    if (*AUX_MU_IIR_REG & 0x2)
-    {
+    if (*AUX_MU_IIR_REG & 0x2) {
       *DISABLE_IRQS_1 = (1 << 29);
       disable_uart_rx_interrupt();
-      uart_rx_interrupt_handler();
+      task_queue_add(uart_rx_interrupt_handler, uart_priority);
       *ENABLE_IRQS_1 = (1 << 29);
-    }
-    else if (*AUX_MU_IIR_REG & (0x4))
-    {
+    } else if (*AUX_MU_IIR_REG & (0x4)) {
       // uart_puts("rx\n");
       *DISABLE_IRQS_1 = (1 << 29);
       disable_uart_tx_interrupt();
-      uart_tx_interrupt_handler();
+      // uart_rx_interrupt_handler();
+      task_queue_add(uart_tx_interrupt_handler, uart_priority);
       *ENABLE_IRQS_1 = (1 << 29);
     }
-  }else if (*CORE0_INT_SRC & 0x2){
+  } else if (*CORE0_INT_SRC & 0x2) {
     *DISABLE_IRQS_1 = (1 << 29);
 
-    timer_handler();
-  
+    task_queue_add(timer_handler, timer_priority);
+
     *ENABLE_IRQS_1 = (1 << 29);
-  }
-  else{
+  } else {
     uart_printf("uart interrupt error\n");
   }
-  enable_interrupt();
 
+  exec_task();
+  enable_interrupt();
 }
