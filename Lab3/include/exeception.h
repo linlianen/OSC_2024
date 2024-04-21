@@ -11,6 +11,7 @@ void disable_interrupt();
 void default_handler();
 void lower_sync_handler();
 void uart_print();
+void exec_task();
 void irq_uart_handler();
 
 

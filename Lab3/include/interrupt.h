@@ -2,6 +2,9 @@
 #ifndef _INTERRUPT_H_
 #define _INTERRUPT_H_
 
+#define timer_priority 5
+#define uart_priority 20
+
 typedef struct task_Q {
   unsigned char used;
   void (*fn)(void);
@@ -12,5 +15,6 @@ typedef struct task_Q {
   struct task_Q *prev;
 } task_q;
 
-void task_queue_add(void (*fn)(void), int priority, unsigned long duration);
+void exec_task();
+void task_queue_add(void (*fn)(void), int priority);
 #endif
