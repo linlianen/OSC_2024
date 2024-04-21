@@ -1,4 +1,4 @@
-# OSC Lab2
+# OSC Lab3
 ## Basic Exercise:
 - [x] Exception
 - [x] Interrupt
