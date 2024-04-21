@@ -1,8 +1,8 @@
 # OSC Lab1
 ## Basic Exercise:
-- [x]1. Basic Initialization
-- [x]2. Mini UART
-- [x]3. Simple Shell
-- [x]4. Mailbox
+- [x] Basic Initialization
+- [x] Mini UART
+- [x] Simple Shell
+- [x] Mailbox
 ## Advanced Exercise:
-- [x]1. Reboot
+- [x] Reboot
