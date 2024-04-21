@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "timer.h": "c",
-        "lib.h": "c",
-        "uart.h": "c",
-        "global.h": "c"
-    }
-}
