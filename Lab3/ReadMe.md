@@ -6,4 +6,4 @@
 
 ## Advanced Exercise:
 - [x] Timer Multiplexing
-- [] Concurrent I/O Devices Handling 
+- [ ] Concurrent I/O Devices Handling 
