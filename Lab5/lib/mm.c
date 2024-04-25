@@ -6,6 +6,7 @@
 #include "../include/exeception.h"
 #include "../include/list.h"
 #include "../include/uart.h"
+#include "../include/thread.h"
 #include <stddef.h>
 #include <stdint.h>
 #define FRAME_BASE ((uintptr_t)0x0)
@@ -81,23 +82,33 @@ void mm_init(struct page_head *a, struct chunk_head *b) {
   memory_reserve((uintptr_t)0x00, (uintptr_t)0x1000);
   // //physical memory
   memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel);
-  uart_printf("phyical memeory reserved start: %p, end: %p\n",
-              (uintptr_t)&_skernel, (uintptr_t)&_ekernel);
+  uart_puts("\r\nphysical memory reserved start:");
+  uart_2hex((uintptr_t)&_skernel);
+  uart_puts("end:");
+  uart_2hex((uintptr_t)&_ekernel);
+  uart_puts("\n");
+  // uart_printf("phyical memeory reserved start: %p, end: %p\n",
+  //             (uintptr_t)&_skernel, (uintptr_t)&_ekernel);
   // // initramfs
-  memory_reserve((uintptr_t)initrd_ptr, (uintptr_t)initramfs_end);
-
-  uart_printf("initrd memeory reserved start: %p, end: %p\n",
-              (uintptr_t)initrd_ptr, (uintptr_t)initramfs_end);
+  // memory_reserve((uintptr_t)initrd_ptr, (uintptr_t)initramfs_end);
+  //
+  // uart_printf("initrd memeory reserved start: %p, end: %p\n",
+  //             (uintptr_t)initrd_ptr, (uintptr_t)initramfs_end);
 
   // dtb memory
-  memory_reserve((uintptr_t)(address), (uintptr_t)(address) + (uintptr_t)size);
+  // memory_reserve((uintptr_t)(address), (uintptr_t)(address) + (uintptr_t)size);
   // uart_printf("dtb memeory reserved start: %p, end:
   // %p\n",(uintptr_t)(address),(uintptr_t)(address)+(uintptr_t)size);
   memory_reserve((uintptr_t)(&__image_end),
                  (uintptr_t)&__simple_malloc_end_no_paging);
-  uart_printf("simple memeory reserved start: %p, end: %p\n",
-              (uintptr_t)(&__image_end),
-              (uintptr_t)&__simple_malloc_end_no_paging);
+  uart_puts("\r\nsimple memory reserved start:");
+  uart_2hex((uintptr_t)&__image_end);
+  uart_puts("end:");
+  uart_2hex((uintptr_t)&__simple_malloc_end_no_paging);
+  uart_puts("\n");
+  // uart_printf("simple memeory reserved start: %p, end: %p\n",
+  //             (uintptr_t)(&__image_end),
+  //             (uintptr_t)&__simple_malloc_end_no_paging);
 
   check_and_merge(a, b);
   // print_memory();
@@ -223,6 +234,9 @@ void *kalloc(int size) {
         TODO: insert the list
 
         */
+        uart_puts("Address: ");
+        uart_2hex((uintptr_t)ptr_list);
+        uart_puts("\n");
         // uart_printf("adddress :%p\n", ptr_list);
 
         chunk_insert_list(&chunk_mem[order], ptr_list);
@@ -242,7 +256,12 @@ void *kalloc(int size) {
 
     chunk_remove_node(&chunk_mem[order], ptr);
     // ptr = remove_tail(&chunk_mem[order]);
-    uart_printf("chunk size : %d, address :%p\n", alloc_size, ptr);
+  uart_puts("Chunk size ");
+  uart_puti(alloc_size);
+  uart_puts(" address ");
+  uart_2hex((uintptr_t)ptr);
+  uart_puts("\n");
+    // uart_printf("chunk size : %d, address :%p\n", alloc_size, ptr);
     // remove_node(&chunk_mem[order], ptr);
   } else {
     int page_cnt = size / PAGE_SIZE;
@@ -273,7 +292,13 @@ void kfree(void *ptr) {
     frames[idx].cont = 0;
     int order = frames[idx].order;
     chunk_remove_node(&chunk_mem[order], ptr);
-    uart_printf("insert address %p in order %d in chunk\n", ptr, order);
+  uart_puts("Insert address  ");
+  uart_2hex((uintptr_t)ptr);
+  uart_puts(" in order ");
+  uart_puti(order);
+  uart_puts("in chunk");
+  uart_puts("\n");
+    // uart_printf("insert address %p in order %d in chunk\n", ptr, order);
 
   } else {
     freepages(ptr);
@@ -350,6 +375,7 @@ void check_and_merge(struct page_head *a, struct chunk_head *b) {
   void *page_list_addr;
   int frame_list_order = 0;
   while (frame_list_idx < FRAME_SIZE_MAX) {
+
     if (frames[frame_list_idx].used == 0) {
       frame_list_order = frames[frame_list_idx].order;
 
@@ -369,7 +395,7 @@ void check_and_merge(struct page_head *a, struct chunk_head *b) {
   //     uart_printf("idx: %d, order: %d\n",idx,frames[idx]);
   //   }
   // }
-  uart_printf("merge finish\n");
+  uart_puts("merge finish\n");
 }
 
 void *splitframe(int order, int size) {
@@ -473,9 +499,13 @@ void *alloc_page(int size) {
       }
     }
   }
-
-  uart_printf("Allocate page address %p in Order %d\n", target_addr,
-            frame_order);
+  uart_puts("Allocate page address ");
+  uart_2hex((uintptr_t)target_addr);
+  uart_puts("in Order");
+  uart_puti(frame_order);
+  uart_puts("\n");
+  // uart_printf("Allocate page address %p in Order %d\n", target_addr,
+  //           frame_order);
   int target_idx =
       (((uintptr_t)target_addr & ~PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
   frames[target_idx].order = frame_order;
@@ -521,7 +551,12 @@ void freepages(void *addr) {
   void *victim_addr = (void *)(FRAME_BASE + free_idx * PAGE_SIZE);
   page_insert_list(&alloc_mem[order], victim_addr);
 
-  uart_printf("Free address %p in Order %d\n", victim_addr, order);
+  uart_puts("Free page address ");
+  uart_2hex((uintptr_t)victim_addr);
+  uart_puts("in Order");
+  uart_puti(order);
+  uart_puts("\n");
+  // uart_printf("Free address %p in Order %d\n", victim_addr, order);
 }
 
 void test_buddy() {
@@ -542,10 +577,17 @@ void test_buddy() {
 
 void test_dynamic_alloc() {
   uart_puts("Allocate a1\n");
-  int *a1 = kalloc(sizeof(int));
-  uart_printf("address %p in a1\n", a1);
+  char *a1 = kalloc(sizeof(thread));
+  uart_puts("address ");
+  uart_2hex((uintptr_t)a1);
+  uart_puts("in a1\n");
+
+  // uart_printf("address %p in a1\n", a1);
   int *a2 = kalloc(sizeof(int));
-  uart_printf("address %p in a2\n", a2);
+  uart_puts("address ");
+  uart_2hex((uintptr_t)a2);
+  uart_puts("in a2\n");
+  // uart_printf("address %p in a2\n", a2);
 
   kfree((void *)a1);
   kfree((void *)a2);
